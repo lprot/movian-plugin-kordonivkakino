@@ -35,7 +35,7 @@ var BASE_URL = 'http://kordonivkakino.club';
 
 function setPageHeader(page, title) {
     if (page.metadata) {
-        page.metadata.title = new RichText(title);
+        page.metadata.title = title;
         page.metadata.logo = logo;
     }
     page.type = "directory";
@@ -222,7 +222,7 @@ new page.Route(plugin.id + ":start", function(page) {
 
 function search(page, query) {
     page.model.contents = 'grid';
-    setPageHeader(page, plugin.synopsis);  
+    setPageHeader(page, plugin.title);  
     page.entries = 0;
     var tryToSearch = true, p = 1;
 

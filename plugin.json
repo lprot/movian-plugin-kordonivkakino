@@ -4,7 +4,7 @@
 	"homepage": "http://github.com/lprot/movian-plugin-kordonivkakino",
 	"title": "KordonivkaKino",
 	"synopsis": "KordonivkaKino.club",
-	"version": "0.3.8",
+	"version": "0.3.9",
         "file": "kordonivkakino.js",
 	"showtimeVersion": "4.8",
 	"type": "ecmascript",
