@@ -93,10 +93,11 @@ new page.Route(plugin.id + ":tv:(.*):(.*):(.*)", function(page, url, title, icon
 
 new page.Route(plugin.id + ":indexItem:(.*):(.*)", function(page, url, title) {
     setPageHeader(page, unescape(title));
+    page.metadata.glwview = Plugin.path + 'list.view';
     page.loading = true;
     var doc = http.request(unescape(url)).toString();
     //1-icon, 2-description 
-    var match = doc.match(/<div class="playerInfo[\s\S]*?<img src="([\s\S]*?)"[\s\S]*?<\/div>([\s\S]*?)<\/span>/);
+    var match = doc.match(/<div class="playerInfo[\s\S]*?<img src="([\s\S]*?)"[\s\S]*?\-\->([\s\S]*?)<\/span>/);
     var icon = match[1].match(/http/) ? match[1] : BASE_URL + match[1];
     page.appendItem(icon, 'video', {
         title: unescape(title),
@@ -172,6 +173,11 @@ function parseThePage(page, doc, tv) {
             page.entries++;
         }
     }
+    if (page.entries == 0) {
+       page.error('К сожалению, поиск по сайту не дал никаких результатов. Попробуйте изменить или сократить Ваш запрос.');
+       return false;
+    }
+
     page.loading = false;
 }
 
