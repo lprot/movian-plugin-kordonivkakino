@@ -71,6 +71,26 @@ function appendItem(page, url, shortTitle, fullTitle, icon) {
    });
 }
 
+new page.Route(plugin.id + ":tv:(.*):(.*):(.*)", function(page, url, title, icon) {
+    page.loading = true;
+    try { // tv
+        var doc = http.request(unescape(url)).toString();
+        var match = http.request(doc.match(/<iframe src="([\s\S]*?)"/)[1]).toString();
+        page.source = "videoparams:" + JSON.stringify({
+            title: unescape(title),
+            no_fs_scan: true,
+            icon: unescape(icon),
+            sources: [{
+                url: 'hls:https://' + http.request('https://api.livesports24.online/gethost').toString() +
+                    match.match(/host \+ "([\s\S]*?)"/)[1]
+            }],
+            no_subtitle_scan: true
+        });
+        page.type = 'video';
+    } catch(err) {}
+    page.loading = false;
+});
+
 new page.Route(plugin.id + ":indexItem:(.*):(.*)", function(page, url, title) {
     setPageHeader(page, unescape(title));
     page.loading = true;
@@ -109,28 +129,36 @@ new page.Route(plugin.id + ":indexItem:(.*):(.*)", function(page, url, title) {
     page.loading = false;
 });
 
-function appendItems(page, doc) {
+function appendItems(page, doc, tv) {
     //1-link, 2-icon, 3-title 
     var re = /<div class="blockItem[\s\S]*?<a href="([\s\S]*?)"[\s\S]*?data-src="([\s\S]*?)"[\s\S]*?<em title="[\s\S]*?">([\s\S]*?)<\/em>/g;
     var match = re.exec(doc);
     while (match) {
-        page.appendItem(plugin.id + ":indexItem:" + escape(match[1]) + ":" + escape(match[3]), 'video', {
-            title: match[3],
-            icon: match[2].match(/http/) ? match[2] : BASE_URL + match[2],
-            tagline: match[3]
-        });
+        var icon = match[2].match(/http/) ? match[2] : BASE_URL + match[2];
+        if (tv)
+            page.appendItem(plugin.id + ":tv:" + escape(match[1]) + ":" + escape(match[3]) + ":" + escape(icon), 'video', {
+                title: match[3],
+                icon: icon,
+                tagline: match[3]
+            });
+         else
+            page.appendItem(plugin.id + ":indexItem:" + escape(match[1]) + ":" + escape(match[3]), 'video', {
+                title: match[3],
+                icon: icon,
+                tagline: match[3]
+            });
         match = re.exec(doc);
         page.entries++;
     }
 }
 
-function parseThePage(page, doc) {
+function parseThePage(page, doc, tv) {
     var block = doc.match(/<div class="block">([\s\S]*?)<\/div><\/div>/);
     if (!block) {
        page.error('К сожалению, поиск по сайту не дал никаких результатов. Попробуйте изменить или сократить Ваш запрос.');
        return false;
     }
-    appendItems(page, block[1]);
+    appendItems(page, block[1], tv);
     if (page.entries == 0) { // categories
         //1-icon, 2-link, 3-title
         re = /<img src="([\s\S]*?)"[\s\S]*?<a href="([\s\S]*?)">([\s\S]*?)<\/a>/g;
@@ -147,7 +175,7 @@ function parseThePage(page, doc) {
     page.loading = false;
 }
 
-function scraper(page, url) {
+function scraper(page, url, tv) {
     page.entries = 0;
     var tryToSearch = true;
 
@@ -155,7 +183,7 @@ function scraper(page, url) {
         if (!tryToSearch) return false;
         page.loading = true;
         var doc = http.request(url).toString();
-        parseThePage(page, doc);
+        parseThePage(page, doc, tv);
         match = doc.match(/class="next"><a href="([\s\S]*?)">/);        
         if (!match) return tryToSearch = false;
         url = match[1];
@@ -194,7 +222,7 @@ function unicode2win1251(str) {
 new page.Route(plugin.id + ":indexFolder:(.*):(.*)", function(page, url, title) {
     page.model.contents = 'grid';
     setPageHeader(page, unescape(title));
-    scraper(page, BASE_URL + unescape(url));
+    scraper(page, BASE_URL + unescape(url), title == 'TV' ? 1 : 0);
 });
 
 new page.Route(plugin.id + ":start", function(page) {
@@ -216,6 +244,10 @@ new page.Route(plugin.id + ":start", function(page) {
         });
         match = re.exec(htmlBlock[1]);
     }
+    page.appendItem(plugin.id + ":indexFolder:/porno-tv:TV", 'directory', {
+        title: 'TV'
+    });
+
     page.appendItem("", "separator", {});
     scraper(page, BASE_URL);
 });
